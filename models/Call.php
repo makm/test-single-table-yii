@@ -31,13 +31,13 @@ use yii\db\ActiveRecord;
  * @property Customer $customer
  * @property User $user
  */
-class Call extends ActiveRecord
+class Call extends ActiveRecord implements HistoryTracked
 {
-    const STATUS_NO_ANSWERED = 0;
-    const STATUS_ANSWERED = 1;
+    public const STATUS_NO_ANSWERED = 0;
+    public const STATUS_ANSWERED = 1;
 
-    const DIRECTION_INCOMING = 0;
-    const DIRECTION_OUTGOING = 1;
+    public const DIRECTION_INCOMING = 0;
+    public const DIRECTION_OUTGOING = 1;
 
     public $duration = 720;
 

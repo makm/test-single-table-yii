@@ -33,15 +33,15 @@ use yii\db\ActiveRecord;
  * @property string $isInbox
  * @property string $statusText
  */
-class Task extends ActiveRecord
+class Task extends ActiveRecord implements HistoryTracked
 {
-    const STATUS_NEW = 0;
-    const STATUS_DONE = 1;
-    const STATUS_CANCEL = 3;
+    public const STATUS_NEW = 0;
+    public const STATUS_DONE = 1;
+    public const STATUS_CANCEL = 3;
 
-    const STATE_INBOX = 'inbox';
-    const STATE_DONE = 'done';
-    const STATE_FUTURE = 'future';
+    public const STATE_INBOX = 'inbox';
+    public const STATE_DONE = 'done';
+    public const STATE_FUTURE = 'future';
 
     /**
      * @inheritdoc
