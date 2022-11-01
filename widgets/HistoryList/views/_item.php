@@ -1,73 +1,75 @@
 <?php
+
 use app\models\Call;
 use app\models\Customer;
 use app\models\History;
-use app\models\search\HistorySearch;
 use app\models\Sms;
 use app\widgets\HistoryList\helpers\HistoryListHelper;
 use yii\helpers\Html;
 
-/** @var $model HistorySearch */
+/** @var $model History */
+$objectTracked = $model->objectTracked;
 
 switch ($model->event) {
     case History::EVENT_CREATED_TASK:
     case History::EVENT_COMPLETED_TASK:
     case History::EVENT_UPDATED_TASK:
-        $task = $model->task;
-
+        $task = $objectTracked;
         echo $this->render('_item_common', [
             'user' => $model->user,
             'body' => HistoryListHelper::getBodyByModel($model),
             'iconClass' => 'fa-check-square bg-yellow',
             'footerDatetime' => $model->ins_ts,
-            'footer' => isset($task->customerCreditor->name) ? "Creditor: " . $task->customerCreditor->name : ''
+            'footer' => isset($task->customerCreditor->name) ? "Creditor: ".$task->customerCreditor->name : '',
         ]);
         break;
     case History::EVENT_INCOMING_SMS:
     case History::EVENT_OUTGOING_SMS:
+        $sms = $objectTracked;
         echo $this->render('_item_common', [
             'user' => $model->user,
             'body' => HistoryListHelper::getBodyByModel($model),
-            'footer' => $model->sms->direction == Sms::DIRECTION_INCOMING ?
+            'footer' => $sms->direction == Sms::DIRECTION_INCOMING ?
                 Yii::t('app', 'Incoming message from {number}', [
-                    'number' => $model->sms->phone_from ?? ''
+                    'number' => $sms->phone_from ?? '',
                 ]) : Yii::t('app', 'Sent message to {number}', [
-                    'number' => $model->sms->phone_to ?? ''
+                    'number' => $sms->phone_to ?? '',
                 ]),
-            'iconIncome' => $model->sms->direction == Sms::DIRECTION_INCOMING,
+            'iconIncome' => $sms->direction == Sms::DIRECTION_INCOMING,
             'footerDatetime' => $model->ins_ts,
-            'iconClass' => 'icon-sms bg-dark-blue'
+            'iconClass' => 'icon-sms bg-dark-blue',
         ]);
         break;
     case History::EVENT_OUTGOING_FAX:
     case History::EVENT_INCOMING_FAX:
-        $fax = $model->fax;
+        $fax = $objectTracked;
 
         echo $this->render('_item_common', [
             'user' => $model->user,
-            'body' => HistoryListHelper::getBodyByModel($model) .
-                ' - ' .
+            'body' => HistoryListHelper::getBodyByModel($model).
+                ' - '.
                 (isset($fax->document) ? Html::a(
                     Yii::t('app', 'view document'),
                     $fax->document->getViewUrl(),
                     [
                         'target' => '_blank',
-                        'data-pjax' => 0
+                        'data-pjax' => 0,
                     ]
                 ) : ''),
             'footer' => Yii::t('app', '{type} was sent to {group}', [
                 'type' => $fax ? $fax->getTypeText() : 'Fax',
-                'group' => isset($fax->creditorGroup) ? Html::a($fax->creditorGroup->name, ['creditors/groups'], ['data-pjax' => 0]) : ''
+                'group' => isset($fax->creditorGroup) ? Html::a($fax->creditorGroup->name, ['creditors/groups'],
+                    ['data-pjax' => 0]) : '',
             ]),
             'footerDatetime' => $model->ins_ts,
-            'iconClass' => 'fa-fax bg-green'
+            'iconClass' => 'fa-fax bg-green',
         ]);
         break;
     case History::EVENT_CUSTOMER_CHANGE_TYPE:
         echo $this->render('_item_statuses_change', [
             'model' => $model,
             'oldValue' => Customer::getTypeTextByType($model->getDetailOldValue('type')),
-            'newValue' => Customer::getTypeTextByType($model->getDetailNewValue('type'))
+            'newValue' => Customer::getTypeTextByType($model->getDetailNewValue('type')),
         ]);
         break;
     case History::EVENT_CUSTOMER_CHANGE_QUALITY:
@@ -80,8 +82,8 @@ switch ($model->event) {
     case History::EVENT_INCOMING_CALL:
     case History::EVENT_OUTGOING_CALL:
         /** @var Call $call */
-        $call = $model->call;
-        $answered = $call && $call->status == Call::STATUS_ANSWERED;
+        $call = $objectTracked;
+        $answered = $call && $call->status === Call::STATUS_ANSWERED;
 
         echo $this->render('_item_common', [
             'user' => $model->user,
@@ -90,7 +92,7 @@ switch ($model->event) {
             'footerDatetime' => $model->ins_ts,
             'footer' => isset($call->applicant) ? "Called <span>{$call->applicant->name}</span>" : null,
             'iconClass' => $answered ? 'md-phone bg-green' : 'md-phone-missed bg-red',
-            'iconIncome' => $answered && $call->direction == Call::DIRECTION_INCOMING
+            'iconIncome' => $answered && $call->direction === Call::DIRECTION_INCOMING,
         ]);
         break;
     default:
@@ -98,7 +100,7 @@ switch ($model->event) {
             'user' => $model->user,
             'body' => HistoryListHelper::getBodyByModel($model),
             'bodyDatetime' => $model->ins_ts,
-            'iconClass' => 'fa-gear bg-purple-light'
+            'iconClass' => 'fa-gear bg-purple-light',
         ]);
         break;
 }

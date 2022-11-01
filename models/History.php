@@ -2,7 +2,7 @@
 
 namespace app\models;
 
-use app\models\traits\ObjectNameTrait;
+use app\models\search\Query\HistoryQuery;
 use Yii;
 use yii\db\ActiveQuery;
 use yii\db\ActiveRecord;
@@ -25,29 +25,70 @@ use yii\db\ActiveRecord;
  * @property Customer $customer
  * @property User $user
  *
- * @property Task $task
- * @property Sms $sms
- * @property Call $call
+ * @property HistoryTracked $objectTracked
  */
 class History extends ActiveRecord
 {
-    use ObjectNameTrait;
+    public const EVENT_CREATED_TASK = 'created_task';
+    public const EVENT_UPDATED_TASK = 'updated_task';
+    public const EVENT_COMPLETED_TASK = 'completed_task';
 
-    const EVENT_CREATED_TASK = 'created_task';
-    const EVENT_UPDATED_TASK = 'updated_task';
-    const EVENT_COMPLETED_TASK = 'completed_task';
+    public  const EVENT_INCOMING_SMS = 'incoming_sms';
+    public const EVENT_OUTGOING_SMS = 'outgoing_sms';
 
-    const EVENT_INCOMING_SMS = 'incoming_sms';
-    const EVENT_OUTGOING_SMS = 'outgoing_sms';
+    public const EVENT_INCOMING_CALL = 'incoming_call';
+    public const EVENT_OUTGOING_CALL = 'outgoing_call';
 
-    const EVENT_INCOMING_CALL = 'incoming_call';
-    const EVENT_OUTGOING_CALL = 'outgoing_call';
+    public const EVENT_INCOMING_FAX = 'incoming_fax';
+    public const EVENT_OUTGOING_FAX = 'outgoing_fax';
 
-    const EVENT_INCOMING_FAX = 'incoming_fax';
-    const EVENT_OUTGOING_FAX = 'outgoing_fax';
+    public const EVENT_CUSTOMER_CHANGE_TYPE = 'customer_change_type';
+    public const EVENT_CUSTOMER_CHANGE_QUALITY = 'customer_change_quality';
 
-    const EVENT_CUSTOMER_CHANGE_TYPE = 'customer_change_type';
-    const EVENT_CUSTOMER_CHANGE_QUALITY = 'customer_change_quality';
+    public const TRACKED_CLASSES_DISCRIMINATOR = [
+        'call' => Call::class,
+        'customer' => Customer::class,
+        'fax' => Fax::class,
+        'sms' => Sms::class,
+        'task' => Task::class,
+    ];
+
+    private function getClassByObjectName(string $object): ?string
+    {
+        $tryClassName = self::TRACKED_CLASSES_DISCRIMINATOR[$object] ?? null;
+        if (
+            class_exists($tryClassName) && \in_array(HistoryTracked::class, class_implements($tryClassName))
+        ) {
+            return $tryClassName;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return HistoryTracked|null
+     */
+    public function getObjectTracked(): ?HistoryTracked
+    {
+        return $this->{$this->object} ?? null;
+    }
+
+    /**
+     * @param $name
+     * @param bool $throwException
+     * @return ActiveQuery|\yii\db\ActiveQueryInterface|null
+     */
+    public function getRelation($name, $throwException = true)
+    {
+        $getter = 'get'.$name;
+        $class = $this->getClassByObjectName($name);
+
+        if (!method_exists($this, $getter) && $class) {
+            return $this->hasOne($class, ['id' => 'object_id']);
+        }
+
+        return parent::getRelation($name, $throwException);
+    }
 
     /**
      * @inheritdoc
@@ -55,6 +96,15 @@ class History extends ActiveRecord
     public static function tableName()
     {
         return '{{%history}}';
+    }
+
+    /**
+     * @inheritdoc
+     * @return HistoryQuery
+     */
+    public static function find(): HistoryQuery
+    {
+        return new HistoryQuery(static::class);
     }
 
     /**
@@ -156,6 +206,7 @@ class History extends ActiveRecord
     public function getDetailChangedAttribute($attribute)
     {
         $detail = json_decode($this->detail);
+
         return isset($detail->changedAttributes->{$attribute}) ? $detail->changedAttributes->{$attribute} : null;
     }
 
@@ -166,6 +217,7 @@ class History extends ActiveRecord
     public function getDetailOldValue($attribute)
     {
         $detail = $this->getDetailChangedAttribute($attribute);
+
         return isset($detail->old) ? $detail->old : null;
     }
 
@@ -176,6 +228,7 @@ class History extends ActiveRecord
     public function getDetailNewValue($attribute)
     {
         $detail = $this->getDetailChangedAttribute($attribute);
+
         return isset($detail->new) ? $detail->new : null;
     }
 
@@ -186,6 +239,7 @@ class History extends ActiveRecord
     public function getDetailData($attribute)
     {
         $detail = json_decode($this->detail);
+
         return isset($detail->data->{$attribute}) ? $detail->data->{$attribute} : null;
     }
 }

@@ -16,11 +16,11 @@ use yii\db\ActiveRecord;
  * @property integer $updated_at
  * @property string $statusText
  */
-class User extends ActiveRecord
+class User extends ActiveRecord implements HistoryTracked
 {
-    const STATUS_DELETED = 0;
-    const STATUS_HIDDEN = 1;
-    const STATUS_ACTIVE = 10;
+    public const STATUS_DELETED = 0;
+    public const STATUS_HIDDEN = 1;
+    public const STATUS_ACTIVE = 10;
 
     /**
      * @inheritdoc
