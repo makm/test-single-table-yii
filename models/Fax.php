@@ -21,7 +21,7 @@ use yii\db\ActiveRecord;
  *
  * @property User $user
  */
-class Fax extends ActiveRecord
+class Fax extends ActiveRecord implements HistoryTracked
 {
     const DIRECTION_INCOMING = 0;
     const DIRECTION_OUTGOING = 1;
@@ -91,5 +91,4 @@ class Fax extends ActiveRecord
     {
         return self::getTypeTexts()[$this->type] ?? $this->type;
     }
-
 }

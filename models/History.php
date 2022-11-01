@@ -25,13 +25,19 @@ use yii\db\ActiveRecord;
  * @property Customer $customer
  * @property User $user
  *
- * @property Task $task
- * @property Sms $sms
- * @property Call $call
+ * @property HistoryTracked $objectTracked
  */
 class History extends ActiveRecord
 {
-    use ObjectNameTrait;
+    public const EVENT_CREATED_TASK = 'created_task';
+    public const EVENT_UPDATED_TASK = 'updated_task';
+    public const EVENT_COMPLETED_TASK = 'completed_task';
+
+    public  const EVENT_INCOMING_SMS = 'incoming_sms';
+    public const EVENT_OUTGOING_SMS = 'outgoing_sms';
+
+    public const EVENT_INCOMING_CALL = 'incoming_call';
+    public const EVENT_OUTGOING_CALL = 'outgoing_call';
 
     const EVENT_CREATED_TASK = 'created_task';
     const EVENT_UPDATED_TASK = 'updated_task';
@@ -43,11 +49,42 @@ class History extends ActiveRecord
     const EVENT_INCOMING_CALL = 'incoming_call';
     const EVENT_OUTGOING_CALL = 'outgoing_call';
 
-    const EVENT_INCOMING_FAX = 'incoming_fax';
-    const EVENT_OUTGOING_FAX = 'outgoing_fax';
+    private function getClassByObjectName(string $object): ?string
+    {
+        $tryClassName = self::TRACKED_CLASSES_DISCRIMINATOR[$object] ?? null;
+        if (
+            class_exists($tryClassName) && \in_array(HistoryTracked::class, class_implements($tryClassName))
+        ) {
+            return $tryClassName;
+        }
 
-    const EVENT_CUSTOMER_CHANGE_TYPE = 'customer_change_type';
-    const EVENT_CUSTOMER_CHANGE_QUALITY = 'customer_change_quality';
+        return null;
+    }
+
+    /**
+     * @return HistoryTracked|null
+     */
+    public function getObjectTracked(): ?HistoryTracked
+    {
+        return $this->{$this->object} ?? null;
+    }
+
+    /**
+     * @param $name
+     * @param bool $throwException
+     * @return ActiveQuery|\yii\db\ActiveQueryInterface|null
+     */
+    public function getRelation($name, $throwException = true)
+    {
+        $getter = 'get'.$name;
+        $class = $this->getClassByObjectName($name);
+
+        if (!method_exists($this, $getter) && $class) {
+            return $this->hasOne($class, ['id' => 'object_id']);
+        }
+
+        return parent::getRelation($name, $throwException);
+    }
 
     /**
      * @inheritdoc
@@ -55,6 +92,15 @@ class History extends ActiveRecord
     public static function tableName()
     {
         return '{{%history}}';
+    }
+
+    /**
+     * @inheritdoc
+     * @return HistoryQuery
+     */
+    public static function find(): HistoryQuery
+    {
+        return new HistoryQuery(static::class);
     }
 
     /**

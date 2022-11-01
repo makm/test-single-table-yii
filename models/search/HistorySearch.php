@@ -62,15 +62,17 @@ class HistorySearch extends History
             return $dataProvider;
         }
 
-        $query->addSelect('history.*');
-        $query->with([
-            'customer',
-            'user',
-            'sms',
-            'task',
-            'call',
-            'fax',
-        ]);
+        $query->addSelect(['history.*'])->with(['user']);
+
+        foreach (array_keys(History::TRACKED_CLASSES_DISCRIMINATOR) as $name) {
+            $query->eagerJoinWith(
+                [
+                    $name => function ($query) use($name) {
+                        $query->onCondition(['history.object' => $name]);
+                    }
+                ]
+            );
+        }
 
         return $dataProvider;
     }
